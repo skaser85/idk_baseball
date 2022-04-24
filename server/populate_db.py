@@ -1,5 +1,15 @@
+import os
 from openpyxl import load_workbook
 from sqlite3 import connect, Cursor, Connection
+import requests
+from shutil import copyfileobj
+
+def download_image(url: str, filename: str):
+    res = requests.get(url, stream = True)
+
+    if res.status_code == 200:
+        with open(filename,'wb') as f:
+            copyfileobj(res.raw, f)
 
 def get_data(c: Cursor, sql: str, values: tuple = (), fetchone: bool = True):
     if fetchone:
@@ -41,6 +51,8 @@ cursor = conn.cursor()
 
 player_fields = ("First Name", "Last Name", "Current Team", "Position", "Bats", "Throws", "Age", "Weight - Lbs", "Birth Place", "Jersey No.", "Height - Feet", "Height - Inches")
 
+images_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
+
 for sheetname in wb.sheetnames:
     team_name = sheetname
     team_id = get_team_id(cursor, team_name)
@@ -60,6 +72,7 @@ for sheetname in wb.sheetnames:
         if not pic_url or not pic_url.startswith('https:'):
             continue
         first_name, last_name, jersey_no = process_player_name(player_name)
+        print(f'{team_name} {first_name} {last_name}')
         weight = weight.split(' ')[0]
         height_ft, height_in = height.split(' ')
         height_ft = height_ft[:-1]
@@ -79,3 +92,4 @@ for sheetname in wb.sheetnames:
         values.append(f'"{height_in}"')
         sql = f'INSERT INTO Player {player_fields} VALUES ({", ".join(values)});'
         insert(conn, cursor, sql)
+        # download_image(pic_url, os.path.join(images_dir, f'{first_name} {last_name}.png'))
