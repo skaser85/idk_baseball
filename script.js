@@ -20,3 +20,36 @@ const docOutsNo = document.querySelector(".outs-number");
 const docBalls = document.querySelector(".balls");
 const docStrikes = docBalls.querySelector(".strikes");
 
+const docCreateGameBtn = document.querySelector("#create-game");
+const docGameNo = document.querySelector("#game-number");
+const docHomeTeamSelect = document.querySelector("#home-team-select");
+const docAwayTeamSelect = document.querySelector("#away-team-select");
+
+docCreateGameBtn.addEventListener("click", async (e) => {
+    // e.preventDefault();
+
+    let response = await axios({
+        method: "get",
+        url: "http://192.168.1.4:8008/creategame",
+        responseType: "JSON"
+    });
+
+    updateTeamSelects(response.data);
+});
+
+const updateTeamSelects = async data => {
+    console.log(data);
+    docGameNo.value = data.game_no;
+    await updateTeamSelect(docHomeTeamSelect, data.teams);
+    await updateTeamSelect(docAwayTeamSelect, data.teams);
+}
+
+const updateTeamSelect = async (select, teams) => {
+    for (let team of teams) {
+        let teamName = `${team.city} ${team.name}`
+        let opt = document.createElement("option");
+        opt.value = teamName;
+        opt.innerHTML = teamName;
+        select.add(opt);
+    }
+}

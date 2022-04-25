@@ -59,7 +59,41 @@
             </div>
         </div>
     </div>
+
+    <button class="button" id="create-game">Create Game</button>
+
+    <div class="card scorebug">
+        <div class="card-content">
+            <div class="content">
+                <div class="field">
+                    <label class="label">Game Number</label>
+                    <div class="control">
+                        <input class="input" type="text" id="game-number" disabled>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Select Home Team</label>
+                    <div class="control">
+                        <select id="home-team-select">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+                <button class="button" id="create-home-away">Create Home Lineup</button>
+                <div class="field">
+                    <label class="label">Select Away Team</label>
+                    <div class="control">
+                        <select id="away-team-select">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+                <button class="button" id="create-away-lineup">Create Away Lineup</button>
+            </div>
+        </div>
+    </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

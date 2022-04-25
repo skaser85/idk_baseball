@@ -22,7 +22,7 @@ def insert(cn: Connection, c: Cursor, sql: str):
     cn.commit()
 
 def process_player_name(name: str) -> tuple[str]:
-    # 'Enyel De Los Santos62'
+    # 'Enyel De Los Santos62' => 'Enyel', 'De Los Santos', '62'
     first = name.split(' ')[0]
     last = ' '.join(name.split(' ')[1:])
     no = ''.join([n for n in last if n.isdigit()])
