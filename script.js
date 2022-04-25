@@ -34,7 +34,7 @@ docCreateGameBtn.addEventListener("click", async (e) => {
         responseType: "JSON"
     });
 
-    updateTeamSelects(response.data);
+    await updateTeamSelects(response.data);
 });
 
 const updateTeamSelects = async data => {
