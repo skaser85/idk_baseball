@@ -1,5 +1,6 @@
 const docPitcherName = document.querySelector(".pitcher-name");
 const docPitchSpeed = document.querySelector(".pitch-speed");
+const docPitchCount = document.querySelector(".pitch-count");
 
 const docBatterName = document.querySelector(".batter-name");
 const docBattingOrderNo = document.querySelector(".batting-order-number");
@@ -14,13 +15,13 @@ const docBottomTeamScore = document.querySelector(".bottom-team-score");
 
 const docFirstBase = document.querySelector(".first-base");
 const docSecondBase = document.querySelector(".second-base");
-const docThirdBase = docBatterName.querySelector(".third-base")
+const docThirdBase = document.querySelector(".third-base")
 
 const docInningArrow = document.querySelector(".inning-arrow");
 const docInningNo = document.querySelector(".inning-number");
 const docOutsNo = document.querySelector(".outs-number");
 const docBalls = document.querySelector(".balls");
-const docStrikes = docBalls.querySelector(".strikes");
+const docStrikes = document.querySelector(".strikes");
 
 const docCreateGameBtn = document.querySelector("#create-game");
 
@@ -36,9 +37,39 @@ docCreateGameBtn.addEventListener("click", async e => {
         responseType: "JSON"
     });
 
-    docGameNo.value = response.data.game_no;
     await updateTeamSelect(docHomeTeamSelect, response.data.teams_in_leagues_and_divisions);
     await updateTeamSelect(docAwayTeamSelect, response.data.teams_in_leagues_and_divisions);
+    await updateScoreBug(response.data.game_data);
+});
+
+docHomeTeamSelect.addEventListener("change", async e => {
+    let teamName = e.target.value;
+    if (teamName === "")
+        return
+    
+    let response = await axios({
+        method: "post",
+        url: "http://192.168.1.4:8008/addteam",
+        responseType: "JSON",
+        data: { teamName, "gameID": docGameNo.value, "side": "Home" }
+    });
+    
+    await updateScoreBug(response.data.game_data);
+});
+
+docAwayTeamSelect.addEventListener("change", async e => {
+    let teamName = e.target.value;
+    if (teamName === "")
+        return
+    
+    let response = await axios({
+        method: "post",
+        url: "http://192.168.1.4:8008/addteam",
+        responseType: "JSON",
+        data: { teamName, "gameID": docGameNo.value, "side": "Away" }
+    });
+
+    await updateScoreBug(response.data.game_data);
 });
 
 const updateTeamSelect = async (select, teamsLeaguesDivs) => {
@@ -56,38 +87,76 @@ const updateTeamSelect = async (select, teamsLeaguesDivs) => {
     }
 }
 
-docHomeTeamSelect.addEventListener("change", async e => {
-    let teamName = e.target.value;
-    if (teamName === "")
-        return
+const updateScoreBug = async (gameData) => {
+    console.log(gameData);
+    return new Promise((resolve, reject) => {
+        docPitcherName.innerHTML = ""
+        if (!isEmptyObject(gameData.pitcher)) {
+            docPitcherName.innerHTML = gameData.pitcher.lastName;
+        }
+        docPitchSpeed.innerHTML = 0;
+        docPitchCount.innerHTML = gameData.pitches;
     
-    let response = await axios({
-        method: "post",
-        url: "http://192.168.1.4:8008/getteamdata",
-        responseType: "JSON",
-        data: { teamName, "gameID": docGameNo.value, "side": "Home" }
-    });
-
-    let data = response.data;
-
-    docBottomTeamName.innerHTML = data.short_name;
-    docBottomTeamContainer.style.backgroundColor = `#${data.colors[0].hex}`;
-});
-
-docAwayTeamSelect.addEventListener("change", async e => {
-    let teamName = e.target.value;
-    if (teamName === "")
-        return
+        let lineupOrderNo = 1; // temporary!!!
+        docBattingOrderNo.innerHTML = "";
+        docBatterName.innerHTML = ""
+        if (!isEmptyObject(gameData.batter)) {
+            docBattingOrderNo.innerHTML = `${lineupOrderNo}.`
+            docBatterName.innerHTML = `${gameData.batter.lastName}`;
+        }
+        docBattingAvg.innerHTML = gameData.battingAvg;
     
-    let response = await axios({
-        method: "post",
-        url: "http://192.168.1.4:8008/getteamdata",
-        responseType: "JSON",
-        data: { teamName, "gameID": docGameNo.value, "side": "Away" }
+        docTopTeamName.innerHTML = ""
+        docTopTeamContainer.style.backgroundColor = "#000";
+        if (!isEmptyObject(gameData.awayTeam)) {
+            docTopTeamName.innerHTML = gameData.awayTeam.shortName;
+            let color = "#000";
+            if (!isEmptyObject(gameData.awayTeam.colors)) 
+                color = `#${gameData.awayTeam.colors[0].hex}`
+            docTopTeamContainer.style.backgroundColor = color;
+        }
+        docTopTeamScore.innerHTML = gameData.awayScore;
+            
+        docBottomTeamName.innerHTML = ""
+        docBottomTeamContainer.style.backgroundColor = "#000";
+        if (!isEmptyObject(gameData.homeTeam)) {
+            docBottomTeamName.innerHTML = gameData.homeTeam.shortName;
+            let color = "#000";
+            if (!isEmptyObject(gameData.homeTeam.colors)) 
+                color = `#${gameData.homeTeam.colors[0].hex}`
+            docBottomTeamContainer.style.backgroundColor = color;
+        }
+        docBottomTeamScore.innerHTML = gameData.homeScore;
+    
+        handleBase(docFirstBase, gameData.firstBaseOccupied);
+        handleBase(docSecondBase, gameData.secondBaseOccupied);
+        handleBase(docThirdBase, gameData.thirdBaseOccupied);
+    
+        handleInningArrow(gameData.topOfInning);
+        docInningNo.innerHTML = gameData.inningNo;
+    
+        docOutsNo.innerHTML = gameData.outs;
+    
+        docBalls.innerHTML = gameData.balls;
+        docStrikes.innerHTML = gameData.strikes;
+
+        docGameNo.value = gameData.id;
+
+        resolve(true);
     });
+}
 
-    let data = response.data;
+const handleBase = (baseEl, baseOccupied) => {
+    baseEl.classList.remove("occupied");
+    if (baseOccupied)
+        baseEl.classList.add("occupied");
+}
 
-    docTopTeamName.innerHTML = data.short_name;
-    docTopTeamContainer.style.backgroundColor = `#${data.colors[0].hex}`;
-});
+const handleInningArrow = (topOfInning) => {
+    docInningArrow.classList.remove("arrow-down", "arrow-up");
+    docInningArrow.classList.add(topOfInning ? "arrow-up" : "arrow-down");
+}
+
+const isEmptyObject = (obj) => {
+    return obj && Object.keys(obj).length === 0 && obj.constructor === Object;
+}
