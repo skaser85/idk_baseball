@@ -87,6 +87,8 @@ class GetTeamData(Resource):
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('teamName')
+        parser.add_argument('gameID')
+        parser.add_argument('side') # Home or Away
         args = parser.parse_args()
         db = DB(DB_FILEPATH)
         
@@ -98,6 +100,8 @@ class GetTeamData(Resource):
 
         colors = db.fetch_all(f'SELECT * FROM "Team Color" WHERE "Team ID" = {team_id}')
         
+        db.update(f'UPDATE Game SET "{args.side} Team ID"=? WHERE ID=?', (team_id, args.gameID))
+
         db.cursor.close()
         db.connection.close()
         return {

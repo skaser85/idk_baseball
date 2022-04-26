@@ -21,9 +21,18 @@ class DB:
         self.cursor.execute(sql, values)
         self.connection.commit()
 
+    def update(self, sql: str, values: tuple[str] = ()):
+        self.cursor.execute(sql, values)
+        self.connection.commit()
+
 if __name__ == '__main__':
     db = DB('idk_db.db')
     # teams = db.fetch_all(f'SELECT * FROM Team')
     # print(teams)
-    db.insert(f'INSERT INTO Game (ID) VALUES (null);')
-    print(db.cursor.lastrowid)
+    # db.insert(f'INSERT INTO Game (ID) VALUES (null);')
+    # print(db.cursor.lastrowid)
+    home_team_id = 1
+    game_id = 143
+    db.update(f'UPDATE Game SET "Home Team ID"=? WHERE ID=?', (home_team_id, game_id))
+    db.cursor.close()
+    db.connection.close()

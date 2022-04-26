@@ -65,7 +65,7 @@ docHomeTeamSelect.addEventListener("change", async e => {
         method: "post",
         url: "http://192.168.1.4:8008/getteamdata",
         responseType: "JSON",
-        data: { teamName }
+        data: { teamName, "gameID": docGameNo.value, "side": "Home" }
     });
 
     let data = response.data;
@@ -83,7 +83,7 @@ docAwayTeamSelect.addEventListener("change", async e => {
         method: "post",
         url: "http://192.168.1.4:8008/getteamdata",
         responseType: "JSON",
-        data: { teamName }
+        data: { teamName, "gameID": docGameNo.value, "side": "Away" }
     });
 
     let data = response.data;
