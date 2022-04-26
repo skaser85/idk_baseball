@@ -119,3 +119,9 @@
 .outs-word {
     color: var(--subtle-white);
 }
+
+.team-select {
+    padding: 5px;
+    font-size: 18px;
+    min-width: 200px;
+}
