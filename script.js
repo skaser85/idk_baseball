@@ -30,6 +30,13 @@ const docGameNo = document.querySelector("#game-number");
 const docHomeTeamSelect = document.querySelector("#home-team-select");
 const docAwayTeamSelect = document.querySelector("#away-team-select");
 
+const docCreateHomeLineup = document.querySelector("#create-home-lineup");
+const docCreateAwayLineup = document.querySelector("#create-away-lineup");
+
+const docPlayerSelects = document.querySelectorAll(".player-select");
+
+let gameData = {};
+
 docCreateGameBtn.addEventListener("click", async e => {
     let response = await axios({
         method: "get",
@@ -37,9 +44,11 @@ docCreateGameBtn.addEventListener("click", async e => {
         responseType: "JSON"
     });
 
+    gameData = response.data.game_data;
+
     await updateTeamSelect(docHomeTeamSelect, response.data.teams_in_leagues_and_divisions);
     await updateTeamSelect(docAwayTeamSelect, response.data.teams_in_leagues_and_divisions);
-    await updateScoreBug(response.data.game_data);
+    await updateScoreBug();
 });
 
 docHomeTeamSelect.addEventListener("change", async e => {
@@ -54,7 +63,9 @@ docHomeTeamSelect.addEventListener("change", async e => {
         data: { teamName, "gameID": docGameNo.value, "side": "Home" }
     });
     
-    await updateScoreBug(response.data.game_data);
+    gameData = response.data.game_data;
+
+    await updateScoreBug();
 });
 
 docAwayTeamSelect.addEventListener("change", async e => {
@@ -69,7 +80,50 @@ docAwayTeamSelect.addEventListener("change", async e => {
         data: { teamName, "gameID": docGameNo.value, "side": "Away" }
     });
 
-    await updateScoreBug(response.data.game_data);
+    gameData = response.data.game_data;
+
+    await updateScoreBug();
+});
+
+docCreateHomeLineup.addEventListener("click", async e => {
+    let response = await axios({
+        method: "post",
+        url: "http://192.168.1.4:8008/getplayers",
+        responseType: "JSON",
+        data: { teamID: gameData.homeTeam.id }
+    });
+
+    console.log(response.data);
+
+    for (let i=1; i<11; i++) {
+        if (i < 10) {
+            let el = document.querySelector(`#batting-order-${i}`);
+            addBatters(el, response.data.batting_order_data);
+            el.addEventListener("change", async e => {
+                let batter = e.target.value;
+                if (batter === "")
+                    return
+
+                let response = await axios({
+                    method: "post",
+                    url: "http://192.168.1.4:8008/addplayertolineup",
+                    responseType: "JSON",
+                    data: {
+                        gameID: gameData.id,
+                        teamID: gameData.homeTeam.id,
+                        playerID: batter.split('-')[0],
+                        orderNo: i
+                    }
+                });
+
+
+                
+            });
+        } else {
+            let el = document.querySelector('#starting-pitcher');
+            addSP(el, response.data.batting_order_data.Pitchers);
+        }
+    }
 });
 
 const updateTeamSelect = async (select, teamsLeaguesDivs) => {
@@ -87,7 +141,31 @@ const updateTeamSelect = async (select, teamsLeaguesDivs) => {
     }
 }
 
-const updateScoreBug = async (gameData) => {
+const addBatters = async (select, battingOrderData) => {
+    for (let playerType of Object.keys(battingOrderData)) {
+        let players = battingOrderData[playerType];
+        let optgroup = document.createElement("optgroup");
+        optgroup.label = playerType;
+        select.add(optgroup);
+        for (let player of players) {
+            let opt = document.createElement("option");
+            opt.value = player;
+            opt.innerHTML = player;
+            select.add(opt);
+        }
+    }
+}
+
+const addSP = async (select, pitchers) => {
+    for (let pitcher of pitchers) {
+        let opt = document.createElement("option");
+        opt.value = pitcher;
+        opt.innerHTML = pitcher;
+        select.add(opt);
+    }
+}
+
+const updateScoreBug = async () => {
     console.log(gameData);
     return new Promise((resolve, reject) => {
         docPitcherName.innerHTML = ""

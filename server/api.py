@@ -160,9 +160,87 @@ class AddTeam(Resource):
                 'game_data': create_game_data_dict(args.gameID)
             }, 201
 
+class GetPlayers(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('teamID')
+        args = parser.parse_args()
+        with DBHandler(DB_FILEPATH) as db:
+            players = [create_player_dict(p) for p in db.fetch_all(f'SELECT * FROM Player WHERE "Team ID" = {args.teamID}')]
+            pitchers = [p for p in players if p['position'].upper() in ['SP','RP']]
+            pitcher_IDs = [p['id'] for p in pitchers]
+            position_players = [p for p in players if not p['id'] in pitcher_IDs]
+            pos_players_batting = [f'{p["id"]} - {p["fullName"]}, {p["position"]}' for p in position_players]
+            pitchers_batting = [f'{p["id"]} - {p["fullName"]}, {p["position"]}' for p in pitchers]
+            return {
+                'players': players,
+                'pitchers': pitchers,
+                'position_players': position_players,
+                'batting_order_data': {
+                    'Position Players': pos_players_batting,
+                    'Pitchers': pitchers_batting
+                }
+            }, 201
+
+class AddPlayerToLineup(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('gameID')
+        parser.add_argument('teamID')
+        parser.add_argument('playerID')
+        parser.add_argument('orderNo')
+        args = parser.parse_args()
+        print(f'\n\n\n{args}\n\n\n')
+        with DBHandler(DB_FILEPATH) as db:
+            sql = f"""
+                SELECT * 
+                FROM Lineup 
+                WHERE 
+                    "Game ID" = {args.gameID} AND 
+                    "Team ID" = {args.teamID} AND
+                    "Order No." = {args.orderNo}
+            """
+
+            exists = db.fetch_one(sql)
+
+            if exists is None:
+                db.insert(f"""
+                    INSERT 
+                    INTO Lineup
+                        (
+                            "Game ID",
+                            "Team ID",
+                            "Order No.",
+                            "Player ID"'
+                        )
+                    VALUES
+                        (
+                            {args.gameID},
+                            {args.teamID},
+                            {args.orderNo},
+                            {args.playerID}
+                        );
+                """)
+            else:
+                db.update(f"""
+                    UPDATE Lineup 
+                    SET 
+                        "Player ID"=?
+                    WHERE 
+                        "Game ID"=? AND
+                        "Team ID"=? AND
+                        "Order No."=?
+                    """,
+                    (args.playerID, args.gameID, args.teamID, args.orderNo)
+                )
+        return {}, 201
+
+
 api.add_resource(CreateGame, '/creategame')
 api.add_resource(GetTeams, '/getteams')
 api.add_resource(AddTeam, '/addteam')
+api.add_resource(GetPlayers, '/getplayers')
+api.add_resource(AddPlayerToLineup, '/addplayertolineup')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8008, debug=True)
