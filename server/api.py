@@ -49,6 +49,9 @@ def create_team_data(team_id: int) -> dict:
             teamData['colors'] = colors
     return teamData
 
+def create_batting_order_text(player_id: int, full_name: str, position: str) -> str:
+    return f'{player_id} - {full_name}, {position}'
+
 def create_player_dict(player: tuple) -> dict:
     return {
         'id': player[0],
@@ -64,15 +67,39 @@ def create_player_dict(player: tuple) -> dict:
         'birthPlace': player[9],
         'jerseyNo': player[10],
         'height': f'{player[11]} ft. {player[12]} in.',
+        'batting_order_text': create_batting_order_text(player[0],f'{player[1]} {player[2]}',player[4])
     }
+
+def create_lineup_data(game_id: int, team_id: int) -> dict:
+    with DBHandler(DB_FILEPATH) as db:
+        lineup = db.fetch_all(f"""
+            SELECT * 
+            FROM Lineup
+            WHERE
+                "Game ID"=? AND
+                "Team ID"=?
+        """, (game_id, team_id))
+        lineup_data = {}
+        for line in lineup:
+            player = db.fetch_one('SELECT * FROM Player WHERE ID=?', (line[3],))
+            lineup_data[line[2]] = create_player_dict(player)
+        return lineup_data
 
 def create_game_data_dict(game_id: int) -> dict:
     with DBHandler(DB_FILEPATH) as db:
         game = db.fetch_one(f'SELECT * FROM Game WHERE ID = {game_id}')
         
-        homeTeamData = create_team_data(game[1])
+        homeTeamData = {}
+        if game[1] > 0:
+            homeTeamData = create_team_data(game[1])
+            homeTeamData['lineup'] = create_lineup_data(game_id, game[1])
+            homeTeamData['battingOrderData'] = create_batting_order_data(game[1])
         
-        awayTeamData = create_team_data(game[2])
+        awayTeamData = {}
+        if game[2] > 0:
+            awayTeamData = create_team_data(game[2])
+            awayTeamData['lineup'] = create_lineup_data(game_id, game[2])
+            awayTeamData['battingOrderData'] = create_batting_order_data(game[2])
         
         pitcherData = {}
         if game[5] > 0:
@@ -103,6 +130,26 @@ def create_game_data_dict(game_id: int) -> dict:
             'pitches': game[15],
             'battingAvg': game[16],
         }
+
+def create_batting_order_data(team_id: int) -> dict:
+    batting_order_data = {}
+    with DBHandler(DB_FILEPATH) as db:
+        players = [create_player_dict(p) for p in db.fetch_all(f'SELECT * FROM Player WHERE "Team ID" = {team_id}')]
+        pitchers = [p for p in players if p['position'].upper() in ['SP','RP']]
+        pitcher_IDs = [p['id'] for p in pitchers]
+        position_players = [p for p in players if not p['id'] in pitcher_IDs]
+        pos_players_batting = [f'{create_batting_order_text(p["id"],p["fullName"],p["position"])}' for p in position_players]
+        pitchers_batting = [f'{create_batting_order_text(p["id"],p["fullName"],p["position"])}' for p in pitchers]
+        batting_order_data = {
+            'players': players,
+            'pitchers': pitchers,
+            'position_players': position_players,
+            'batting_order_data': {
+                'Position Players': pos_players_batting,
+                'Pitchers': pitchers_batting
+            }
+        }
+    return batting_order_data
 
 class CreateGame(Resource):
     def get(self):
@@ -136,6 +183,21 @@ class GetTeams(Resource):
     def get(self):
         return {'teams': get_teams()}, 201
 
+class GetGames(Resource):
+    def get(self):
+        with DBHandler(DB_FILEPATH) as db:
+            games = db.fetch_all('SELECT ID FROM Game')
+        return {'games': [g[0] for g in games]}, 201
+
+class GetGame(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('gameID')
+        args = parser.parse_args()
+        return {
+                'game_data': create_game_data_dict(args.gameID)
+            }, 201
+
 class AddTeam(Resource):
     def post(self):
         parser = reqparse.RequestParser()
@@ -165,22 +227,10 @@ class GetPlayers(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('teamID')
         args = parser.parse_args()
-        with DBHandler(DB_FILEPATH) as db:
-            players = [create_player_dict(p) for p in db.fetch_all(f'SELECT * FROM Player WHERE "Team ID" = {args.teamID}')]
-            pitchers = [p for p in players if p['position'].upper() in ['SP','RP']]
-            pitcher_IDs = [p['id'] for p in pitchers]
-            position_players = [p for p in players if not p['id'] in pitcher_IDs]
-            pos_players_batting = [f'{p["id"]} - {p["fullName"]}, {p["position"]}' for p in position_players]
-            pitchers_batting = [f'{p["id"]} - {p["fullName"]}, {p["position"]}' for p in pitchers]
-            return {
-                'players': players,
-                'pitchers': pitchers,
-                'position_players': position_players,
-                'batting_order_data': {
-                    'Position Players': pos_players_batting,
-                    'Pitchers': pitchers_batting
-                }
-            }, 201
+        print(args.teamID)
+        batting_order_data = create_batting_order_data(args.teamID)
+        print(batting_order_data)
+        return {'batting_order_data': batting_order_data}, 201
 
 class AddPlayerToLineup(Resource):
     def post(self):
@@ -190,7 +240,6 @@ class AddPlayerToLineup(Resource):
         parser.add_argument('playerID')
         parser.add_argument('orderNo')
         args = parser.parse_args()
-        print(f'\n\n\n{args}\n\n\n')
         with DBHandler(DB_FILEPATH) as db:
             sql = f"""
                 SELECT * 
@@ -241,6 +290,8 @@ api.add_resource(GetTeams, '/getteams')
 api.add_resource(AddTeam, '/addteam')
 api.add_resource(GetPlayers, '/getplayers')
 api.add_resource(AddPlayerToLineup, '/addplayertolineup')
+api.add_resource(GetGames, '/getgames')
+api.add_resource(GetGame, '/getgame')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8008, debug=True)
