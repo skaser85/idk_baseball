@@ -52,7 +52,7 @@ docCreateGameBtn.addEventListener("click", async e => {
     opt.innerHTML = gameData.id;
     docGameNo.add(opt);
 
-    await updateTeamSelect(docTeamSelect, response.data.teams_in_leagues_and_divisions);
+    await updateTeamSelect(response.data.teams_in_leagues_and_divisions);
     await updateScoreBug();
 });
 
