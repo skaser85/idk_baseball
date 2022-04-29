@@ -28,11 +28,10 @@ const docGetGamesBtn = document.querySelector("#get-games");
 
 const docGameNo = document.querySelector("#game-number");
 
-const docHomeTeamSelect = document.querySelector("#home-team-select");
-const docAwayTeamSelect = document.querySelector("#away-team-select");
+const docTeamSelect = document.querySelector("#team-select");
 
-const docCreateHomeLineup = document.querySelector("#create-home-lineup");
-const docCreateAwayLineup = document.querySelector("#create-away-lineup");
+const docSideOptions = document.querySelectorAll("input[name='team']");
+let SIDE_SELECTED = "home";
 
 const docPlayerSelects = document.querySelectorAll(".player-select");
 
@@ -47,13 +46,13 @@ docCreateGameBtn.addEventListener("click", async e => {
 
     gameData = response.data.game_data;
 
+    clearSelect(docGameNo);
     let opt = document.createElement("option");
     opt.value = gameData.id;
     opt.innerHTML = gameData.id;
     docGameNo.add(opt);
 
-    await updateTeamSelect(docHomeTeamSelect, response.data.teams_in_leagues_and_divisions);
-    await updateTeamSelect(docAwayTeamSelect, response.data.teams_in_leagues_and_divisions);
+    await updateTeamSelect(docTeamSelect, response.data.teams_in_leagues_and_divisions);
     await updateScoreBug();
 });
 
@@ -94,7 +93,7 @@ docGameNo.addEventListener("change", async e => {
     await updateScoreBug();
 });
 
-docHomeTeamSelect.addEventListener("change", async e => {
+docTeamSelect.addEventListener("change", async e => {
     let teamName = e.target.value;
     if (teamName === "")
         return
@@ -103,82 +102,71 @@ docHomeTeamSelect.addEventListener("change", async e => {
         method: "post",
         url: "http://192.168.1.4:8008/addteam",
         responseType: "JSON",
-        data: { teamName, "gameID": docGameNo.value, "side": "Home" }
+        data: {
+            teamName,
+            "gameID": docGameNo.value,
+            "side": SIDE_SELECTED
+        }
     });
     
     gameData = response.data.game_data;
 
     await updateScoreBug();
+    await updateLineup();
 });
 
-docAwayTeamSelect.addEventListener("change", async e => {
-    let teamName = e.target.value;
-    if (teamName === "")
-        return
+for (let opt of docSideOptions) {
+    opt.addEventListener("change", async e => {
+        let side = e.target;
+        SIDE_SELECTED = e.target.id.split("-")[0];
+
+        if (isEmptyObject(gameData.awayTeam)) {
+            clearSelect(docTeamSelect);
+        } else {
+            docTeamSelect.value = gameData.awayTeam.fullTeamName;
+        }
+
+        await updateScoreBug();
+        await updateLineup();
+    });
+}
+
+const updateLineup = async () => {
+    return new Promise((resolve, reject) => {
+        let battingOrderData = {};
+        let pitchers = {};
     
-    let response = await axios({
-        method: "post",
-        url: "http://192.168.1.4:8008/addteam",
-        responseType: "JSON",
-        data: { teamName, "gameID": docGameNo.value, "side": "Away" }
-    });
-
-    gameData = response.data.game_data;
-
-    await updateScoreBug();
-});
-
-docCreateHomeLineup.addEventListener("click", async e => {
-    let response = await axios({
-        method: "post",
-        url: "http://192.168.1.4:8008/getplayers",
-        responseType: "JSON",
-        data: { teamID: gameData.homeTeam.id }
-    });
-
-    console.log(response.data);
-
-    for (let i=1; i<11; i++) {
-        if (i < 10) {
-            let el = document.querySelector(`#batting-order-${i}`);
-            addBatters(el, response.data.batting_order_data.batting_order_data);
-            el.removeEventListener("change", selectBatter);
-            el.addEventListener("change", selectBatter(e, gameData.homeTeam.id));
+        if (SIDE_SELECTED === "home") {
+            if (!isEmptyObject(gameData.homeTeam)) {
+                battingOrderData = gameData.homeTeam.battingOrderData.batting_order_data;
+                pitchers = gameData.homeTeam.battingOrderData.batting_order_data.Pitchers
+            }
         } else {
-            let el = document.querySelector('#starting-pitcher');
-            addSP(el, response.data.batting_order_data.batting_order_data.Pitchers);
+            if (!isEmptyObject(gameData.awayTeam)) {
+                battingOrderData = gameData.awayTeam.battingOrderData.batting_order_data;
+                pitchers = gameData.awayTeam.battingOrderData.batting_order_data.Pitchers
+            }
         }
-    }
-});
 
-docCreateAwayLineup.addEventListener("click", async e => {
-    let response = await axios({
-        method: "post",
-        url: "http://192.168.1.4:8008/getplayers",
-        responseType: "JSON",
-        data: { teamID: gameData.awayTeam.id }
+        for (let i=1; i<11; i++) {
+            if (i < 10) {
+                let el = document.querySelector(`#batting-order-${i}`);
+                addBatters(el, battingOrderData);
+            } else {
+                let el = document.querySelector('#starting-pitcher');
+                addSP(el, pitchers);
+            }
+        }
     });
+}
 
-    console.log(response.data);
-
-    for (let i=1; i<11; i++) {
-        if (i < 10) {
-            let el = document.querySelector(`#batting-order-${i}`);
-            addBatters(el, response.data.batting_order_data.batting_order_data);
-            el.removeEventListener("change", selectBatter);
-            el.addEventListener("change", selectBatter(e, gameData.awayTeam.id));
-        } else {
-            let el = document.querySelector('#starting-pitcher');
-            addSP(el, response.data.batting_order_data.batting_order_data.Pitchers);
-        }
-    }
-});
-
-const selectBatter = async (e, teamID) => {
-    let batter = e.target.value;
-    let orderNo = e.target.id.split('-')[2]
+const selectBatter = async (batterSelect) => {
+    let batter = batterSelect.value;
+    let orderNo = batterSelect.id.split('-')[2]
     if (batter === "")
         return
+
+    console.log(batter);
 
     let response = await axios({
         method: "post",
@@ -194,6 +182,7 @@ const selectBatter = async (e, teamID) => {
 }
 
 const updateTeamSelect = async (select, teamsLeaguesDivs) => {
+    await clearSelect(select);
     for (let leagueDiv of Object.keys(teamsLeaguesDivs)) {
         let teams = teamsLeaguesDivs[leagueDiv];
         let optgroup = document.createElement("optgroup");
@@ -208,10 +197,19 @@ const updateTeamSelect = async (select, teamsLeaguesDivs) => {
     }
 }
 
+const clearSelect = async select => {
+    return new Promise((resolve, reject) => {
+        for (i = select.options.length; i > 0; i--) {
+            select.remove(i);
+        }
+        resolve(true);
+    });
+}
+
 const addBatters = async (select, battingOrderData) => {
-    for (i = select.options.length; i > 0; i--) {
-        select.remove(i);
-    }
+    await clearSelect(select);
+    if (isEmptyObject(battingOrderData))
+        return
     for (let playerType of Object.keys(battingOrderData)) {
         let players = battingOrderData[playerType];
         let optgroup = document.createElement("optgroup");
@@ -224,9 +222,33 @@ const addBatters = async (select, battingOrderData) => {
             select.add(opt);
         }
     }
+    select.addEventListener("change", async e => {
+        let batter = e.target.value;
+        let orderNo = e.target.id.split('-')[2]
+        if (batter === "")
+            return
+
+        console.log(batter);
+        console.log(orderNo);
+
+        let response = await axios({
+            method: "post",
+            url: "http://192.168.1.4:8008/addplayertolineup",
+            responseType: "JSON",
+            data: {
+                gameID: gameData.id,
+                teamID: SIDE_SELECTED === "home" ? gameData.homeTeam.id : gameData.awayTeam.id,
+                playerID: batter.split('-')[0],
+                orderNo
+            }
+        }); 
+    });
 }
 
 const addSP = async (select, pitchers) => {
+    await clearSelect(select);
+    if (isEmptyObject(pitchers))
+        return
     for (let pitcher of pitchers) {
         let opt = document.createElement("option");
         opt.value = pitcher;

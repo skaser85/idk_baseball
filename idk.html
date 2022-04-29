@@ -73,32 +73,32 @@
                         <option value=""></option>
                     </select>
                 </div>
+                <label class="label">Select Team</label>
+                <div class="control side-select">
+                    <label class="radio">
+                      <input type="radio" name="team" id="home-team" checked>
+                      Home
+                    </label>
+                    <label class="radio">
+                      <input type="radio" name="team" id="away-team">
+                      Away
+                    </label>
+                </div>
                 <div class="field">
-                    <label class="label">Select Home Team</label>
                     <div class="control">
-                        <select class="team-select" id="home-team-select">
+                        <select class="team-select" id="team-select">
                             <option value=""></option>
                         </select>
                     </div>
                 </div>
-                <button class="button" id="create-home-lineup">Create Home Lineup</button>
-                <div class="field">
-                    <label class="label">Select Away Team</label>
-                    <div class="control">
-                        <select class="team-select" id="away-team-select">
-                            <option value=""></option>
-                        </select>
-                    </div>
-                </div>
-                <button class="button" id="create-away-lineup">Create Away Lineup</button>
             </div>
         </div>
     </div>
-
     
-    <div class="card lineup-setup home-team-lineup">
+    <div class="card lineup-setup team-lineup">
         <div class="card-content">
-            <div class="content">                
+            <div class="content">
+                <label class="label">Set Lineup</label>
                 <div class="field">
                     <label class="label">Batting Order - 1</label>
                     <div class="control">

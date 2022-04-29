@@ -260,7 +260,7 @@ class AddPlayerToLineup(Resource):
                             "Game ID",
                             "Team ID",
                             "Order No.",
-                            "Player ID"'
+                            "Player ID"
                         )
                     VALUES
                         (
