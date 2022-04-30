@@ -151,32 +151,31 @@ def create_batting_order_data(team_id: int) -> dict:
         }
     return batting_order_data
 
+def get_teams_in_leagues_and_divisions(teams: list) -> list:        
+    teams_in_leagues_and_divisions = {
+        'AL Central': [],
+        'AL East': [],
+        'AL West': [],
+        'NL Central': [],
+        'NL East': [],
+        'NL West': []
+    }
+    
+    for team in teams:
+        league = 'AL' if team['league'] == 'American' else 'NL'
+        league_div = f'{league} {team["division"]}'
+        teams_in_leagues_and_divisions[league_div].append(team['fullTeamName'])
+
+    return teams_in_leagues_and_divisions
+
 class CreateGame(Resource):
     def get(self):
         with DBHandler(DB_FILEPATH) as db:
             db.insert(f'INSERT INTO Game (ID) VALUES (null);')
             game_no = db.cursor.lastrowid
             
-            teams = get_teams()
-            
-            teams_in_leagues_and_divisions = {
-                'AL Central': [],
-                'AL East': [],
-                'AL West': [],
-                'NL Central': [],
-                'NL East': [],
-                'NL West': []
-            }
-            
-            for team in teams:
-                league = 'AL' if team['league'] == 'American' else 'NL'
-                league_div = f'{league} {team["division"]}'
-                teams_in_leagues_and_divisions[league_div].append(team['fullTeamName'])
-            
             return {
-                'game_data': create_game_data_dict(game_no),
-                'teams': teams,
-                'teams_in_leagues_and_divisions': teams_in_leagues_and_divisions
+                'game_data': create_game_data_dict(game_no)
             }, 201
 
 class GetTeams(Resource):
@@ -284,6 +283,13 @@ class AddPlayerToLineup(Resource):
                 )
         return {}, 201
 
+class GetTeamsForTeamSelect(Resource):
+    def get(self):
+        teams = get_teams()
+        return {
+            'teams': teams,
+            'teamsLeaguesDivs': get_teams_in_leagues_and_divisions(teams)
+        }, 201
 
 api.add_resource(CreateGame, '/creategame')
 api.add_resource(GetTeams, '/getteams')
@@ -292,6 +298,7 @@ api.add_resource(GetPlayers, '/getplayers')
 api.add_resource(AddPlayerToLineup, '/addplayertolineup')
 api.add_resource(GetGames, '/getgames')
 api.add_resource(GetGame, '/getgame')
+api.add_resource(GetTeamsForTeamSelect, '/getteamsforteamselect')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8008, debug=True)

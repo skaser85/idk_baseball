@@ -52,7 +52,7 @@ docCreateGameBtn.addEventListener("click", async e => {
     opt.innerHTML = gameData.id;
     docGameNo.add(opt);
 
-    await updateTeamSelect(response.data.teams_in_leagues_and_divisions);
+    await updateTeamSelect();
     await updateScoreBug();
 });
 
@@ -89,8 +89,22 @@ docGameNo.addEventListener("change", async e => {
     });
     
     gameData = response.data.game_data;
+    console.log(SIDE_SELECTED);
 
     await updateScoreBug();
+    await updateTeamSelect();
+    await updateLineup();
+
+    console.log(SIDE_SELECTED);
+    if (SIDE_SELECTED === "home") {
+        if (!isEmptyObject(gameData.homeTeam)) {
+            docTeamSelect.value = gameData.homeTeam.fullTeamName;
+        }
+    } else {
+        if (!isEmptyObject(gameData.awayTeam)) {
+            docTeamSelect.value = gameData.awayTeam.fullTeamName;
+        }
+    }
 });
 
 docTeamSelect.addEventListener("change", async e => {
@@ -119,11 +133,28 @@ for (let opt of docSideOptions) {
     opt.addEventListener("change", async e => {
         let side = e.target;
         SIDE_SELECTED = e.target.id.split("-")[0];
+        
+        let response = await axios({
+            method: "post",
+            url: "http://192.168.1.4:8008/getgame",
+            responseType: "JSON",
+            data: { "gameID": gameData.id }
+        });
 
-        if (isEmptyObject(gameData.awayTeam)) {
-            clearSelect(docTeamSelect);
+        gameData = response.data.game_data;
+
+        if (SIDE_SELECTED === "home") {
+            if (isEmptyObject(gameData.homeTeam)) {
+                updateTeamSelect();
+            } else {
+                docTeamSelect.value = gameData.homeTeam.fullTeamName;
+            }
         } else {
-            docTeamSelect.value = gameData.awayTeam.fullTeamName;
+            if (isEmptyObject(gameData.awayTeam)) {
+                updateTeamSelect();
+            } else {
+                docTeamSelect.value = gameData.awayTeam.fullTeamName;
+            }
         }
 
         await updateScoreBug();
@@ -140,23 +171,23 @@ const updateLineup = async () => {
             if (!isEmptyObject(gameData.homeTeam)) {
                 battingOrderData = gameData.homeTeam.battingOrderData.batting_order_data;
                 pitchers = gameData.homeTeam.battingOrderData.batting_order_data.Pitchers
+                lineup = gameData.homeTeam.lineup;
             }
         } else {
             if (!isEmptyObject(gameData.awayTeam)) {
                 battingOrderData = gameData.awayTeam.battingOrderData.batting_order_data;
                 pitchers = gameData.awayTeam.battingOrderData.batting_order_data.Pitchers
+                lineup = gameData.awayTeam.lineup;
             }
         }
 
-        for (let i=1; i<11; i++) {
-            if (i < 10) {
-                let el = document.querySelector(`#batting-order-${i}`);
-                addBatters(el, battingOrderData);
-            } else {
-                let el = document.querySelector('#starting-pitcher');
-                addSP(el, pitchers);
-            }
+        for (let i=1; i<10; i++) {
+            let el = document.querySelector(`#batting-order-${i}`);
+            addBatters(el, battingOrderData, lineup);
         }
+        
+        let el = document.querySelector('#starting-pitcher');
+        addSP(el, pitchers);
     });
 }
 
@@ -165,8 +196,6 @@ const selectBatter = async (batterSelect) => {
     let orderNo = batterSelect.id.split('-')[2]
     if (batter === "")
         return
-
-    console.log(batter);
 
     let response = await axios({
         method: "post",
@@ -181,32 +210,51 @@ const selectBatter = async (batterSelect) => {
     });                
 }
 
-const updateTeamSelect = async (select, teamsLeaguesDivs) => {
-    await clearSelect(select);
+const updateTeamSelect = async () => {
+    await clearSelect(docTeamSelect);
+    
+    let response = await axios({
+        method: "get",
+        url: "http://192.168.1.4:8008/getteamsforteamselect",
+        responseType: "JSON"
+    });
+
+    teamsLeaguesDivs = response.data.teamsLeaguesDivs;
+
     for (let leagueDiv of Object.keys(teamsLeaguesDivs)) {
         let teams = teamsLeaguesDivs[leagueDiv];
         let optgroup = document.createElement("optgroup");
         optgroup.label = leagueDiv;
-        select.add(optgroup);
+        docTeamSelect.add(optgroup);
         for (let team of teams) {
             let opt = document.createElement("option");
             opt.value = team;
             opt.innerHTML = team;
-            select.add(opt);
+            docTeamSelect.add(opt);
         }
     }
 }
 
 const clearSelect = async select => {
     return new Promise((resolve, reject) => {
-        for (i = select.options.length; i > 0; i--) {
+        for (i = select.options.length - 1; i >= 0; i--) {
             select.remove(i);
         }
+        let optgroups = select.querySelectorAll("optgroup");
+        if (optgroups.length > 0) {
+            for (i = optgroups.length - 1; i >= 0; i--) {
+                optgroups[i].remove();
+            }
+        }
+        let opt = document.createElement("option");
+        opt.value = "";
+        opt.innerHTML = "";
+        select.add(opt);
         resolve(true);
     });
 }
 
-const addBatters = async (select, battingOrderData) => {
+const addBatters = async (select, battingOrderData, lineup) => {
     await clearSelect(select);
     if (isEmptyObject(battingOrderData))
         return
@@ -222,6 +270,14 @@ const addBatters = async (select, battingOrderData) => {
             select.add(opt);
         }
     }
+
+    orderNo = select.id.split("-")[2]
+    if (!isEmptyObject(lineup)) {
+        if (orderNo in lineup) {
+            select.value = lineup[orderNo].batting_order_text;
+        }
+    }
+
     select.addEventListener("change", async e => {
         let batter = e.target.value;
         let orderNo = e.target.id.split('-')[2]
