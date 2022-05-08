@@ -33,7 +33,7 @@ const docTeamSelect = document.querySelector("#team-select");
 const docSideOptions = document.querySelectorAll("input[name='team']");
 let SIDE_SELECTED = "home";
 
-const docPlayerSelects = document.querySelectorAll(".player-select");
+const docSaveLineupBtn = document.querySelector("#save-lineup");
 
 let gameData = {};
 
@@ -129,6 +129,42 @@ docTeamSelect.addEventListener("change", async e => {
     await updateLineup();
 });
 
+docSaveLineupBtn.addEventListener("click", async e => {
+    let teamID = SIDE_SELECTED === "home" ? gameData.homeTeam.id : gameData.awayTeam.id;
+    let docPlayerSelects = document.querySelectorAll(".player-select");
+    let lineup = [];
+    docPlayerSelects.forEach(s => {
+        if (s.value.length) {
+            let orderNo = 0;
+            let isPitcher = true;
+            if (s.id !== "starting-pitcher"){
+                orderNo = s.id.split("-")[2];
+                isPitcher = false;
+            }
+            let playerID = s.value.split("-")[0];
+            lineup.push({ playerID, orderNo, isPitcher });
+        } else {
+            lineup.push({});
+        }
+    });
+    console.log(lineup);
+
+    let response = await axios({
+        method: "post",
+        url: "http://192.168.1.4:8008/savelineup",
+        responseType: "JSON",
+        data: {
+            gameID: gameData.id,
+            teamID,
+            lineup: JSON.stringify(lineup)
+        }
+    });
+
+    gameData = response.data.game_data;
+
+    await updateScoreBug();
+});
+
 for (let opt of docSideOptions) {
     opt.addEventListener("change", async e => {
         let side = e.target;
@@ -189,25 +225,6 @@ const updateLineup = async () => {
         let el = document.querySelector('#starting-pitcher');
         addSP(el, pitchers);
     });
-}
-
-const selectBatter = async (batterSelect) => {
-    let batter = batterSelect.value;
-    let orderNo = batterSelect.id.split('-')[2]
-    if (batter === "")
-        return
-
-    let response = await axios({
-        method: "post",
-        url: "http://192.168.1.4:8008/addplayertolineup",
-        responseType: "JSON",
-        data: {
-            gameID: gameData.id,
-            teamID,
-            playerID: batter.split('-')[0],
-            orderNo
-        }
-    });                
 }
 
 const updateTeamSelect = async () => {
@@ -277,28 +294,6 @@ const addBatters = async (select, battingOrderData, lineup) => {
             select.value = lineup[orderNo].batting_order_text;
         }
     }
-
-    select.addEventListener("change", async e => {
-        let batter = e.target.value;
-        let orderNo = e.target.id.split('-')[2]
-        if (batter === "")
-            return
-
-        console.log(batter);
-        console.log(orderNo);
-
-        let response = await axios({
-            method: "post",
-            url: "http://192.168.1.4:8008/addplayertolineup",
-            responseType: "JSON",
-            data: {
-                gameID: gameData.id,
-                teamID: SIDE_SELECTED === "home" ? gameData.homeTeam.id : gameData.awayTeam.id,
-                playerID: batter.split('-')[0],
-                orderNo
-            }
-        }); 
-    });
 }
 
 const addSP = async (select, pitchers) => {
