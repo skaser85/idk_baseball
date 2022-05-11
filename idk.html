@@ -6,12 +6,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://kit.fontawesome.com/5c95cd5f3c.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Play:wght@400;700&family=Saira:wght@400;700&family=Titillium+Web:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="styles.css">
     <title>idk baseball</title>
 </head>
 <body>
-
     <div class="card scorebug">
+        <div class="card-content scorebug-card-content">
+            <div class="content">
+                <div class="teams-score">
+                    <div class="team-score away-team">
+                        <div class="team-logo"></div>
+                        <div class="score">2</div>
+                    </div>
+                    <div class="team-score home-team">
+                        <div class="team-logo"></div>
+                        <div class="score">4</div>
+                    </div>
+                </div>
+                <div class="bases-outs-count-innings">
+                    <div class="bases-container">
+                        <span class="base third-base"></span>
+                        <span class="base second-base"></span>
+                        <span class="base first-base occupied"></span>
+                    </div>
+                    <div class="outs-container">
+                        <span class="out first-out occupied"></span>
+                        <span class="out second-out"></span>
+                    </div>
+                    <div class="count-container">
+                        <span class="balls">2</span>-<span class="strikes">1</span>
+                    </div>
+                    <div class="inning">
+                        <span class="inning-arrow arrow-down"></span>
+                        <span class="inning-number">6</span>
+                    </div>
+                </div>
+                <div class="player pitcher">
+                    <span class="pitcher-name">COLEMAN</span>
+                    <span class="pitch-count">3 PITCHES</span>
+                </div>
+                <div class="player batter">
+                    <div class="batter-info">
+                        <span class="batter-order-no">9.</span>
+                        <span class="batter-name">OWINGS</span>
+                    </div>
+                    <span class="prev-plate-apps">2 BB</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- <div class="card scorebug">
         <div class="card-content">
             <div class="content">
                 <div class="player-names">
@@ -59,7 +107,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <button class="button" id="create-game">Create Game</button>
     <button class="button" id="get-games">Get Games</button>

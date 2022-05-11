@@ -1,12 +1,171 @@
 :root {
     --black: #070908;
     --yellow: #c0a775;
-    --base-size: 30px;
+    /* --base-size: 30px; */
+    --base-size: 20px;
+    --base-color: rgba(200,200,200,0.5);
     --subtle-white: rgba(255,255,255,0.75);
     --arrow-size: 10px;
+    --logo-width: 100px;
+    --logo-height: 50px;
+    --away-team-logo: url("images/logos/MIL_on_dark.svg");
+    --away-team-bkg-color: #12284b;
+    --away-team-accent-color: #12284b;
+    --home-team-logo: url("images/logos/CIN_on_dark.svg");
+    --home-team-bkg-color: #c6011f;
+    --home-team-accent-color: #c6011f;
+    --score-width: calc(var(--logo-width)*.75);
+    --scorebug-padding: 1.5em; /* set by Bulma */
+    --scorebug-extra-info-height: calc(var(--logo-height)*1.1);
+    --outs-circle-size: 20px;
 }
 
-.player-names {
+.scorebug {
+    max-width: calc((var(--logo-width) * 2) + (var(--score-width)*2) + (var(--scorebug-padding)*2));
+    /* font-family: 'Orbitron', sans-serif; */
+    /* font-family: 'Play', sans-serif; */
+    font-family: 'Saira', sans-serif;
+    /* font-family: 'Titillium Web', sans-serif; */
+}
+
+.teams-score {
+    display: flex;
+    flex-direction: row;
+}
+
+.team-score {
+    display: flex;
+    flex-direction: row;
+}
+
+.away-team > .team-logo {
+    background-color: var(--away-team-bkg-color);
+    background-image: var(--away-team-logo);
+}
+
+.home-team > .team-logo {
+    background-color: var(--home-team-bkg-color);
+    background-image: var(--home-team-logo);
+}
+
+.team-logo {
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    width: var(--logo-width);
+    height: var(--logo-height);
+}
+
+.score {
+    width: var(--score-width);
+    height: var(--logo-height);
+    background: #f1f1f1;
+    color: var(--black);
+    text-align: center;
+    line-height: var(--logo-height);
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.bases-outs-count-innings {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--black);
+    color: white;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    height: var(--scorebug-extra-info-height);
+    font-size: 36px;
+}
+
+.bases-container {
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    /* flex-grow: 1; */
+    justify-content: center;
+    align-items: center;
+    /* background-color: var(--black); */
+}
+
+.base {
+    width: var(--base-size);
+    height: var(--base-size);
+    /* border: 1px solid var(--base-color); */
+    background-color: var(--base-color);
+    transform: rotate(45deg);
+    margin-top: 15px;
+}
+
+.second-base {
+    align-self: flex-start;
+    margin-top:8px
+}
+
+.outs-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.out {
+    width: var(--outs-circle-size);
+    height: var(--outs-circle-size);
+    border-radius: 50%;
+    background-color: var(--base-color);
+    margin: 0 5px;
+}
+
+.inning {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    width: 50px;
+}
+
+.arrow-down {
+    width: 0;
+    height: 0;
+    border-left: var(--arrow-size) solid transparent;
+    border-right: var(--arrow-size) solid transparent;    
+    border-top: var(--arrow-size) solid gold;   
+}
+
+.arrow-up {
+    width: 0; 
+    height: 0; 
+    border-left: var(--arrow-size) solid transparent;
+    border-right: var(--arrow-size) solid transparent;
+    border-bottom: var(--arrow-size) solid gold;
+}
+
+.occupied {
+    background-color: gold;
+}
+
+.player {
+    width: 100%;
+    background-color: var(--black);
+    color: white;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    font-size: 18px;
+    margin-top: 5px;
+}
+
+.pitcher {
+    border-left: 15px solid var(--away-team-accent-color);
+}
+
+.batter {
+    border-left: 15px solid var(--home-team-accent-color)
+}
+
+/* .player-names {
     margin-bottom: 2px;
 }
 
@@ -118,7 +277,7 @@
 
 .outs-word {
     color: var(--subtle-white);
-}
+} */
 
 select {
     padding: 5px;
